@@ -15,6 +15,8 @@
 package file_test
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/google/gapid/core/assert"
@@ -49,4 +51,37 @@ func TestPathContains(t *testing.T) {
 		assert.For("").Compare(test.dir, "contains", test.file).
 			Test(test.dir.Contains(test.file) == test.expected)
 	}
+}
+
+func TestIsExecutable(t *testing.T) {
+	var (
+		tmpdir  string
+		err     error
+		tmpfile *os.File
+	)
+	tmpdir, err = ioutil.TempDir("/tmp", "path_test-")
+	if err != nil {
+		t.Error("Can't create temp directory.")
+	}
+	path := file.Abs(tmpdir)
+	if path.IsExecutable() {
+		t.Error("file.IsExecutable() should be false for dirs")
+	}
+	tmpfile, err = ioutil.TempFile(tmpdir, "path_test_file-")
+	tmpfile.Close()
+	if err := os.Chmod(tmpfile.Name(), 0600); err != nil {
+		t.Error("Can't change temp file permissions")
+	}
+	if path.IsExecutable() {
+		t.Error("file.IsExecutable() should be false for temp file")
+	}
+	if err := os.Chmod(tmpfile.Name(), 0755); err != nil {
+		t.Error("Can't change temp file permissions")
+	}
+	path = file.Abs(tmpfile.Name())
+	if !path.IsExecutable() {
+		t.Error("file.IsExecutable() should be true for temp file")
+	}
+	os.Remove(tmpfile.Name())
+	defer os.Remove(tmpdir)
 }
