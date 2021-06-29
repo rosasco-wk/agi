@@ -24,6 +24,7 @@ import (
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/gapis/trace/android"
 	"github.com/google/gapid/gapis/trace/desktop"
+	"github.com/google/gapid/gapis/trace/fuchsia"
 	"github.com/google/gapid/gapis/trace/tracer"
 )
 
@@ -51,13 +52,16 @@ func (m *Manager) createTracer(ctx context.Context, dev bind.Device) {
 	}
 	deviceID := dev.Instance().ID.ID()
 	log.I(ctx, "New trace scheduler for device: %v %v", deviceID, dev.Instance().Name)
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	if dev.Instance().GetConfiguration().GetOS().GetKind() == device.Android {
-		m.tracers[deviceID] = android.NewTracer(dev)
-	} else {
-		m.tracers[deviceID] = desktop.NewTracer(dev)
-	}
+  m.mutex.Lock()
+  defer m.mutex.Unlock()
+  switch deviceKind := dev.Instance().GetConfiguration().GetOS().GetKind(); deviceKind {
+  case device.Android:
+    m.tracers[deviceID] = android.NewTracer(dev)
+  case device.Fuchsia:
+    m.tracers[deviceID] = fuchsia.NewTracer(dev)
+  default:
+    m.tracers[deviceID] = desktop.NewTracer(dev)
+  }
 }
 
 func (m *Manager) destroyTracer(ctx context.Context, dev bind.Device) {

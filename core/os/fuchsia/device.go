@@ -15,13 +15,23 @@
 package fuchsia
 
 import (
+	"context"
+
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/core/os/shell"
 )
 
 // Device extends the bind.Device interface with capabilities specific to Fuchsia devices.
 type Device interface {
-	bind.Device
+	bind.DeviceWithShell
 	// Command is a helper that builds a shell.Cmd with the device as its target.
 	Command(name string, args ...string) shell.Cmd
+	// Pulls the remote file to the local one.
+	Pull(ctx context.Context, remote, local string) error
+	// Pushes the local file to the remote one.
+	Push(ctx context.Context, local, remote string) error
+	// SetSystemProperty sets the system property with the given string value.
+	SetSystemProperty(ctx context.Context, name, value string) error
+	// SystemProperty returns the system property in string.
+	SystemProperty(ctx context.Context, name string) (string, error)
 }

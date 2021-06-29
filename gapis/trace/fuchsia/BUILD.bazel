@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Google Inc.
+# Copyright (C) 2018 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,12 +16,18 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["device.go", "installed_package.go"],
-    importpath = "github.com/google/gapid/core/os/fuchsia",
+    srcs = ["trace.go"],
+    importpath = "github.com/google/gapid/gapis/trace/fuchsia",
     visibility = ["//visibility:public"],
     deps = [
-        "//core/os/device:go_default_library",
+        "//core/app:go_default_library",
+        "//core/log:go_default_library",
         "//core/os/device/bind:go_default_library",
-        "//core/os/shell:go_default_library",
+        "//core/os/fuchsia:go_default_library",
+        "//gapidapk/pkginfo:go_default_library",
+        "//gapis/api/sync:go_default_library",
+        "//gapis/service:go_default_library",
+        "//gapis/service/path:go_default_library",
+        "//gapis/trace/tracer:go_default_library",
     ],
 )
