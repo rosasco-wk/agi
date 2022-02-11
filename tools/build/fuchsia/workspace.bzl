@@ -2,22 +2,27 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@gapid//tools/build/rules:repository.bzl", "maybe_repository")
 
 
-def _fuchsia_idk_repository_impl(ctx):
-  idk_home = ctx.os.environ.get("FUCHSIA_IDK_HOME")
-  if idk_home == None:
-    fail("FUCHSIA_IDK_HOME env var is required")
-  ctx.symlink(idk_home, "idk")
-  ctx.symlink(Label("@gapid//tools/build/fuchsia:idk.BUILD"), "BUILD.bazel")
+# The Fuchsia SDK core must be downloaded in advance to
+# FUCHSIA_SDK_CORE_HOME for this function to work properly.
+def _fuchsia_sdk_core_repository_impl(ctx):
+  sdk_core_home = ctx.os.environ.get("FUCHSIA_SDK_CORE_HOME")
+  if sdk_core_home == None:
+    fail("FUCHSIA_SDK_CORE_HOME env var is required")
+  if not ctx.path(sdk_core_home).exists:
+    fail("FUCHSIA_SDK_CORE_HOME directory does not exist")
+  ctx.symlink(sdk_core_home, "sdk_core")
+  ctx.symlink(Label("@gapid//tools/build/fuchsia:sdk_core.BUILD"), "BUILD.bazel")
 
-fuchsia_idk_repository = repository_rule(
-  implementation = _fuchsia_idk_repository_impl,
-  environ = ["FUCHSIA_IDK_HOME"],
+fuchsia_sdk_core_repository = repository_rule(
+  implementation = _fuchsia_sdk_core_repository_impl,
+  environ = ["FUCHSIA_SDK_CORE_HOME"],
 )
 
 
 _CIPD_URL = "https://chrome-infra-packages.appspot.com/dl/{}/{}/+/{}"
 
 def _fuchsia_clang_repository_impl(ctx):
+  # Download clang.
   ctx.download_and_extract(_CIPD_URL.format(
       "fuchsia/third_party/clang",
       "linux-amd64",
@@ -26,11 +31,12 @@ def _fuchsia_clang_repository_impl(ctx):
     sha256 = "d8770e4f595dbcd092f0db65773ce3cb0ae2d82ef816bc680d918838e7e5db87",
     type = "zip",
   )
+  # Symlink toolchain setup file.
   ctx.symlink(Label("@gapid//tools/build/fuchsia:crosstool.BUILD"), "BUILD.bazel")
 
-  idk_root = str(ctx.path(Label("@fuchsia_idk//:idk/README.md")).dirname)
-  sysroot_arm64 = idk_root + "/arch/arm64/sysroot"
-  sysroot_x64 = idk_root + "/arch/x64/sysroot"
+  sdk_core_root = str(ctx.path(Label("@fuchsia_sdk_core//:sdk_core/README.md")).dirname)
+  sysroot_arm64 = sdk_core_root + "/arch/arm64/sysroot"
+  sysroot_x64 = sdk_core_root + "/arch/x64/sysroot"
 
   ctx.template(
     "cc_toolchain_config.bzl",
@@ -49,8 +55,8 @@ fuchsia_clang_repository = repository_rule(
 
 def fuchsia_dependencies(locals = {}):
   maybe_repository(
-    fuchsia_idk_repository,
-    name = "fuchsia_idk",
+    fuchsia_sdk_core_repository,
+    name = "fuchsia_sdk_core",
     locals = locals,
   )
   maybe_repository(
