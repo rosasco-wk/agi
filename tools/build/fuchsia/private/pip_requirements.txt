@@ -1,0 +1,33 @@
+# Copyright 2021 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file contains pip dependencies required for the
+# rules_fuchsia repository.
+
+# See https://pip.pypa.io/en/stable/reference/requirements-file-format/#requirements-file-format
+
+# JSON5 library used by //tools/artifact:update
+json5==0.9.6 --hash=sha256:823e510eb355949bed817e1f3e2d682455dc6af9daf6066d5698d6a2ca4481c2
+
+# GCS library used by //tools/gcs_upload:gcs_upload
+google-cloud-storage==1.42.3 --hash=sha256:71ee3a0dcf2c139f034a054181cd7658f1ec8f12837d2769c450a8a00fcd4c6d
+google_cloud_core==2.2.1 --hash=sha256:ab6cee07791afe4e210807ceeab749da6a076ab16d496ac734bf7e6ffea27486
+google_auth==2.3.3 --hash=sha256:a348a50b027679cb7dae98043ac8dbcc1d7951f06d8387496071a1e05a2465c0
+protobuf==3.19.1 --hash=sha256:36d90676d6f426718463fe382ec6274909337ca6319d375eebd2044e6c6ac560
+google_api_core==2.2.2 --hash=sha256:e7853735d4f51f4212d6bf9750620d76fc0106c0f271be0c3f43b73501c7ddf9
+requests==2.26.0 --hash=sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24
+google_resumable_media==2.1.0 --hash=sha256:cdc75ea0361e39704dc7df7da59fbd419e73c8bc92eac94d8a020d36baa9944b
+six==1.16.0 --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
+pyasn1_modules==0.2.8 --hash=sha256:a50b808ffeb97cb3601dd25981f6b016cbb3d31fbf57a8b8a87428e6158d0c74
+cachetools==4.2.4 --hash=sha256:92971d3cb7d2a97efff7c7bb1657f21a8f5fb309a37530537c71b1774189f2d1
+setuptools==58.5.3 --hash=sha256:a481fbc56b33f5d8f6b33dce41482e64c68b668be44ff42922903b03872590bf
+rsa==4.7.2 --hash=sha256:78f9a9bf4e7be0c5ded4583326e7461e3a3c5aae24073648b4bdfa797d78c9d2
+googleapis_common_protos==1.53.0 --hash=sha256:f6d561ab8fb16b30020b940e2dd01cd80082f4762fa9f3ee670f4419b4b8dbd0
+urllib3==1.26.7 --hash=sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844
+charset_normalizer==2.0.7 --hash=sha256:f7af805c321bfa1ce6714c51f254e0d5bb5e5834039bc17db7ebe3a4cec9492b
+idna==3.3 --hash=sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff
+certifi==2021.10.8 --hash=sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569
+google_crc32c==1.3.0 --hash=sha256:ed447680ff21c14aaceb6a9f99a5f639f583ccfe4ce1a5e1d48eb41c3d6b3217
+pyasn1==0.4.8 --hash=sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d
+
