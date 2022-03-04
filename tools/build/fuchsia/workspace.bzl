@@ -65,4 +65,4 @@ def fuchsia_dependencies(locals = {}):
     name = "fuchsia_clang",
     locals = locals,
   )
-  native.register_toolchains("@fuchsia_clang//:cc-compiler-aarch64")
+  native.register_toolchains("@fuchsia_clang//:fuchsia-cc-toolchain-aarch64")

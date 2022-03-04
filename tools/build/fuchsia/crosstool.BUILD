@@ -141,3 +141,26 @@ config_setting(
     name = "x86_build",
     values = {"cpu": "x86_64"},
 )
+
+constraint_value(
+    name = "fuchsia",
+    constraint_setting = "@platforms//os:os",
+)
+
+FUCHSIA_PLATFORM = [
+  ":fuchsia",
+  "@platforms//cpu:aarch64",
+]
+
+platform(
+    name = "fuchsia_aarch64",
+    constraint_values = FUCHSIA_PLATFORM,
+)
+
+toolchain(
+    name = "fuchsia-cc-toolchain-aarch64",
+    exec_compatible_with = FUCHSIA_PLATFORM,
+    target_compatible_with = FUCHSIA_PLATFORM,
+    toolchain = ":cc-compiler-aarch64",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
