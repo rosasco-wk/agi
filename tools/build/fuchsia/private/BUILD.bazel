@@ -1,0 +1,35 @@
+# Copyright 2021 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+load(
+    ":build_setting.bzl",
+    "access_token_string",
+    "fuchsia_version_string",
+)
+
+exports_files(
+    glob([
+        "*.bzl",
+        "pip_requirements.txt",
+    ]),
+    visibility = ["//:__subpackages__"],
+)
+
+filegroup(
+    name = "all_starlark_files",
+    srcs = glob(["*.bzl"]),
+    visibility = ["//:__subpackages__"],
+)
+
+fuchsia_version_string(
+    name = "build_version",
+    build_setting_default = "None",
+    visibility = ["//visibility:public"],
+)
+
+access_token_string(
+    name = "access_token",
+    build_setting_default = "None",
+    visibility = ["//visibility:public"],
+)

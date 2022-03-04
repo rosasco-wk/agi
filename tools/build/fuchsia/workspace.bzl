@@ -1,5 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@gapid//tools/build/rules:repository.bzl", "maybe_repository")
+load("@gapid//tools/build/fuchsia/private:fuchsia_toolchain_info.bzl", "fuchsia_toolchain_info")
 
 
 # The Fuchsia SDK core must be downloaded in advance to
@@ -64,4 +65,4 @@ def fuchsia_dependencies(locals = {}):
     name = "fuchsia_clang",
     locals = locals,
   )
-  native.register_toolchains("@fuchsia_clang//:toolchain")
+  native.register_toolchains("@fuchsia_clang//:cc-compiler-aarch64")
