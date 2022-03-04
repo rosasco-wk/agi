@@ -37,18 +37,26 @@ genrule(
     stamp = 1,
 )
 
+# config_setting(
+#     name = "linux",
+#     values = {
+        # "cpu": "k8",
+#     },
+#     visibility = ["//visibility:public"],
+# )
+
 config_setting(
     name = "linux",
-    values = {
-        "cpu": "k8",
-    },
-    visibility = ["//visibility:public"],
+    constraint_values = [
+      "@platforms//os:linux",
+    ],
 )
 
 config_setting(
     name = "darwin",
     values = {
-        "cpu": "darwin",
+        # "cpu": "darwin",
+        "cpu": "n-a",
     },
     visibility = ["//visibility:public"],
 )
@@ -56,7 +64,8 @@ config_setting(
 config_setting(
     name = "windows",
     values = {
-        "cpu": "x64_windows",
+        # "cpu": "x64_windows",
+        "cpu": "n-a",
     },
     visibility = ["//visibility:public"],
 )
@@ -64,7 +73,8 @@ config_setting(
 config_setting(
     name = "android-armeabi-v7a",
     values = {
-        "cpu": "armeabi-v7a",
+        # "cpu": "armeabi-v7a",
+        "cpu": "n-a",
     },
     visibility = ["//visibility:public"],
 )
@@ -72,7 +82,8 @@ config_setting(
 config_setting(
     name = "android-arm64-v8a",
     values = {
-        "cpu": "arm64-v8a",
+        # "cpu": "arm64-v8a",
+        "cpu": "n-a",
     },
     visibility = ["//visibility:public"],
 )
@@ -80,19 +91,19 @@ config_setting(
 config_setting(
     name = "android-x86",
     values = {
-        "cpu": "x86",
+        # "cpu": "x86",
+        "cpu": "n-a",
     },
     visibility = ["//visibility:public"],
 )
 
 config_setting(
     name = "fuchsia-arm64",
-    values = {
-        "cpu": "aarch64",
-    },
-    visibility = ["//visibility:public"],
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@fuchsia_clang//:fuchsia",
+   ],
 )
-
 config_setting(
     name = "debug",
     values = {

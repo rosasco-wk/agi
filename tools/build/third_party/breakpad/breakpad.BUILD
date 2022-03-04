@@ -23,6 +23,8 @@ LIB_POSIX = [
     "src/common/string_conversion.cc",
 ]
 
+LIB_FUCHSIA = []
+
 LIB_LINUX = LIB_POSIX + [
     "src/client/linux/crash_generation/crash_generation_client.cc",
     "src/client/linux/dump_writer_common/thread_info.cc",
@@ -80,6 +82,7 @@ cc_library(
         "@gapid//tools/build:linux": LIB_LINUX,
         "@gapid//tools/build:darwin": LIB_MACOS,
         "@gapid//tools/build:windows": LIB_WINDOWS,
+        "@gapid//tools/build:fuchsia-arm64": LIB_FUCHSIA,
         # Android.
         "//conditions:default": LIB_LINUX + [
             "src/common/android/breakpad_getcontext.S",
@@ -88,11 +91,12 @@ cc_library(
     hdrs = glob(["src/**/*.h"]),
     copts = cc_copts() + select({
         "@gapid//tools/build:linux": [
-            "-Wno-maybe-uninitialized",
+            "-Wno-uninitialized",
             "-Wno-deprecated",
             "-Wno-array-bounds",
         ],
         "@gapid//tools/build:darwin": [],
+        "@gapid//tools/build:fuchsia-arm64": [],
         "@gapid//tools/build:windows": [
             "-D_UNICODE",
             "-DUNICODE",
@@ -104,6 +108,7 @@ cc_library(
     linkopts = select({
         "@gapid//tools/build:linux": ["-lpthread"],
         "@gapid//tools/build:darwin": [],
+        "@gapid//tools/build:fuchsia-arm64": [],
         "@gapid//tools/build:windows": ["-lwininet"],
         # Android.
         "//conditions:default": [],
@@ -179,6 +184,8 @@ DUMP_SYMS_POSIX = [
     "src/common/stabs_to_module.cc",
 ]
 
+DUMP_SYMS_FUCHSIA = []
+
 DUMP_SYMS_LINUX = DUMP_SYMS_POSIX + [
     "src/common/linux/crc32.cc",
     "src/common/linux/dump_symbols.cc",
@@ -222,13 +229,14 @@ cc_library(
         "@gapid//tools/build:linux": DUMP_SYMS_LINUX,
         "@gapid//tools/build:darwin": DUMP_SYMS_MACOS,
         "@gapid//tools/build:windows": DUMP_SYMS_WINDOWS,
+        "@gapid//tools/build:fuchsia-arm64": DUMP_SYMS_FUCHSIA,
     }),
     hdrs = glob(["src/**/*.h"]),
     copts = cc_copts() + [
         "-DN_UNDF=0x0",
     ] + select({
         "@gapid//tools/build:windows": ["-DNO_STABS_SUPPORT"],
-        "@gapid//tools/build:linux": ["-Wno-maybe-uninitialized"],
+        "@gapid//tools/build:linux": ["-Wno-uninitialized"],
         "//conditions:default": [],
     }),
     linkopts = select({

@@ -1,16 +1,7 @@
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
+load("@local_config_platform//:constraints.bzl", "HOST_CONSTRAINTS")
 
 package(default_visibility = ["//visibility:public"])
-
-cc_toolchain_suite(
-    name = "toolchain",
-    toolchains = {
-        "aarch64|llvm": ":cc-compiler-aarch64",
-        "aarch64": ":cc-compiler-aarch64",
-        "x86_64|llvm": ":cc-compiler-x86_64",
-        "x86_64": ":cc-compiler-x86_64",
-    },
-)
 
 TARGET_CPUS = [
     "aarch64",
@@ -25,7 +16,7 @@ filegroup(
     name = "cc-compiler-prebuilts",
     srcs = [
         "//:bin/clang",
-        "//:bin/clang-14",
+        "//:bin/clang-15",
         "//:bin/llvm-ar",
         "//:bin/clang++",
         "//:bin/ld.lld",
@@ -36,7 +27,7 @@ filegroup(
         "//:bin/llvm-objcopy",
     ] + glob([
         # TODO(fxbug.dev/91180): Try not to hard code this path.
-        "lib/clang/14.0.0/include/**",
+        "lib/clang/15.0.0/include/**",
     ]) + glob([
         "include/c++/v1/**",
     ]),
@@ -126,21 +117,6 @@ cc_library(
     )
     for cpu in TARGET_CPUS
 ]
-alias(
-    name = "dist",
-    actual = select({
-        ":arm_build": ":dist-aarch64",
-        ":x86_build": ":dist-x86_64",
-    }),
-)
-config_setting(
-    name = "arm_build",
-    values = {"cpu": "aarch64"},
-)
-config_setting(
-    name = "x86_build",
-    values = {"cpu": "x86_64"},
-)
 
 constraint_value(
     name = "fuchsia",
@@ -159,7 +135,7 @@ platform(
 
 toolchain(
     name = "fuchsia-cc-toolchain-aarch64",
-    exec_compatible_with = FUCHSIA_PLATFORM,
+    exec_compatible_with = HOST_CONSTRAINTS,
     target_compatible_with = FUCHSIA_PLATFORM,
     toolchain = ":cc-compiler-aarch64",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",

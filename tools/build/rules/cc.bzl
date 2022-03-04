@@ -26,13 +26,13 @@ _ANDROID_COPTS = [
 # This should probably all be done by fixing the toolchains...
 def cc_copts():
     return ["-Werror"] + select({
+        "@gapid//tools/build:fuchsia-arm64": ["-DGAPID_TARGET_OS_FUCHSIA"],
         "@gapid//tools/build:linux": ["-DGAPID_TARGET_OS_LINUX"],
         "@gapid//tools/build:darwin": ["-DGAPID_TARGET_OS_OSX"],
         "@gapid//tools/build:windows": ["-DGAPID_TARGET_OS_WINDOWS"],
         "@gapid//tools/build:android-armeabi-v7a": _ANDROID_COPTS,
         "@gapid//tools/build:android-arm64-v8a": _ANDROID_COPTS,
         "@gapid//tools/build:android-x86": _ANDROID_COPTS,
-        "@gapid//tools/build:fuchsia-arm64": ["-DGAPID_TARGET_OS_FUCHSIA"],
     })
 
 # Strip rule implementation, which invokes the cc_toolchain.strip_executable
@@ -89,6 +89,7 @@ strip = rule(
         ),
     },
     executable = True,
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
 )
 
 # Symbol rule implementation, which invokes the _dump_syms binary to generate

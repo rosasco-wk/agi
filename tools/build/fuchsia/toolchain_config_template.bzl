@@ -79,7 +79,7 @@ def _cc_toolchain_config_impl(ctx):
                                 "--target=" + target_system_name,
                                 "-Wall",
                                 "-Werror",
-                                "-Wextra-semi",
+                                # "-Wextra-semi", TODO(rosasco): removed for libgapii
                                 "-Wnewline-eof",
                                 # TODO(mangini): llcpp is causing shadow errors, see why and reenable: "-Wshadow",
                             ],
@@ -157,7 +157,7 @@ def _cc_toolchain_config_impl(ctx):
             sysroots[ctx.attr.cpu] + "/include",  # Platform parts of libc.
             "%{CROSSTOOL_ROOT}/include/" + ctx.attr.cpu + "-unknown-fuchsia/c++/v1",  # Platform libc++.
             "%{CROSSTOOL_ROOT}/include/c++/v1",  # Platform libc++.
-            "%{CROSSTOOL_ROOT}/lib/clang/14.0.0/include",  # Platform libc++.
+            "%{CROSSTOOL_ROOT}/lib/clang/15.0.0/include",  # Platform libc++.
         ],
         builtin_sysroot = sysroots[ctx.attr.cpu],
         features = features,
