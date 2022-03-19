@@ -1,0 +1,6 @@
+{
+    include: [
+        "gapii-pkg/application.shard.cml",
+        "vulkan/client.shard.cml",
+    ],
+}

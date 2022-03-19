@@ -105,3 +105,12 @@ android_dynamic_library(
     exports = "gapii_android.exports",
     deps = [":cc"],
 )
+
+fuchsia_component(
+    name = "gapii",
+    manifest = "fuchsia/gapii.cml"
+
+fuchsia_package(
+    package_name = "gapii_pkg",
+    deps = [":libgapii"],
+)
