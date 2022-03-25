@@ -110,15 +110,16 @@ android_dynamic_library(
 fuchsia_component_manifest(
     name = "gapii_component_manifest",
     src = "fuchsia/gapii.cml",
+    includes = [ "fuchsia/application.shard.cml" ],
 )
 
 fuchsia_component(
-    name = "gapii_fuchsia_component",
+    name = "gapii_component",
     manifest = ":gapii_component_manifest",
     deps = [":libgapii"],
 )
 
 fuchsia_package(
-    name = "gapii_fuchsia_pkg",
-    deps = [":gapii_fuchsia_component"],
+    name = "gapii_pkg",
+    deps = [":gapii_component"],
 )

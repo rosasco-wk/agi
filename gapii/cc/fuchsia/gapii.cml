@@ -1,6 +1,5 @@
 {
     include: [
-        "gapii-pkg/application.shard.cml",
-        "vulkan/client.shard.cml",
+        "//gapii/cc/fuchsia/application.shard.cml",
     ],
 }
