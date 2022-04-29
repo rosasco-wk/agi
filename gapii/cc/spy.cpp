@@ -48,6 +48,12 @@
 #include <sys/system_properties.h>
 #endif  // TARGET_OS == GAPID_OS_ANDROID
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+#include <lib/sys/cpp/component_context.h>
+#include <atomic>
+#include "core/cc/fuchsia/zircon_socket_connection.h"
+#endif
+
 namespace {
 
 const uint32_t kMaxFramebufferObservationWidth = 3840;
@@ -64,6 +70,10 @@ const char* kCaptureProcessNameSystemProperty = "debug.agi.procname";
 // Mirrored in gapis/trace/desktop/trace.go
 const char* kCaptureProcessNameEnvVar = "GAPID_CAPTURE_PROCESS_NAME";
 #endif  // TARGET_OS == GAPID_OS_ANDROID
+
+#if TARGET_OS == GAPID_OS_FUCHSIA
+std::atomic<int> outstanding = 0;
+#endif
 
 thread_local gapii::CallObserver* gContext = nullptr;
 
@@ -83,6 +93,28 @@ struct spy_creator {
   std::unique_ptr<gapii::Spy> m_spy;
 };
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+zx_koid_t FuchsiaProcessID() {
+  zx::unowned<zx::process> process = zx::process::self();
+  zx_info_handle_basic_t info;
+  zx_status_t status = zx_object_get_info(
+      process->get(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
+      nullptr /* actual */, nullptr /* avail */);
+  if (status != ZX_OK) {
+    GAPID_ERROR("Failed to get process handle.");
+    return 0;
+  }
+  return info.koid;
+}
+
+std::string FuchsiaProcessName() {
+  zx::unowned<zx::process> process = zx::process::self();
+  char process_name[ZX_MAX_NAME_LEN];
+  process->get_property(ZX_PROP_NAME, process_name, sizeof(process_name));
+  return process_name;
+}
+#endif
+
 Spy* Spy::get() {
   static spy_creator creator;
   return creator.m_spy.get();
@@ -98,8 +130,8 @@ Spy::Spy()
   // Start by checking whether to capture the current process: compare the
   // current process name with the "capture_proc_name" that we get from the
   // environment. An empty "capture_proc_name" means capture any process. This
-  // is useful for games where the process initially started by AGI creates an
-  // other process where the actual game rendering happens.
+  // is useful for games where the process initially started by AGI creates
+  // another process where the actual game rendering happens.
   bool this_executable = true;
   auto this_proc_name = core::get_process_name();
   GAPID_INFO("this process name: %s", this_proc_name.c_str());
@@ -134,7 +166,14 @@ Spy::Spy()
       pipe = envPipe;
     }
     mConnection = ConnectionStream::listenPipe(pipe.c_str(), true);
-#else                                           // TARGET_OS
+#elif TARGET_OS == GAPID_OS_FUCHSIA
+    zx::socket vulkan_socket(AgisRegisterAndRetrieve(core::GetNanoseconds()));
+    if (!vulkan_socket.is_valid()) {
+      GAPID_ERROR("Vulkan socket is invalid.");
+    }
+    mConnection =
+        ConnectionStream::listenZirconSocket(std::move(vulkan_socket));
+#else
     mConnection = ConnectionStream::listenSocket("127.0.0.1", "9286");
 #endif                                          // TARGET_OS
     if (mConnection->write("gapii", 5) != 5) {  // handshake magic
@@ -254,6 +293,86 @@ Spy::~Spy() {
   mCaptureFrames = -1;
   endTraceIfRequested();
 }
+
+#if TARGET_OS == GAPID_OS_FUCHSIA
+zx_handle_t Spy::AgisRegisterAndRetrieve(uint64_t client_id) {
+  mAgisNumConnections = 0;
+
+  // Make AgisRegisterAndRetrieve() re-entrant by flushing outstanding loop
+  // requests.
+  if (mAgisLoop) {
+    LoopWait();
+    mAgisLoop->Quit();
+  }
+
+  // Establish message loop, component context and agis session.
+  mAgisLoop =
+      std::make_unique<async::Loop>(&kAsyncLoopConfigAttachToCurrentThread);
+
+  std::unique_ptr<sys::ComponentContext> context =
+      sys::ComponentContext::Create();
+  context->svc()->Connect(
+      mAgisComponentRegistry.NewRequest(mAgisLoop->dispatcher()));
+
+  mAgisComponentRegistry.set_error_handler([this](zx_status_t status) {
+    GAPID_FATAL("Unable to set agis error handler");
+    mAgisLoop->Quit();
+  });
+
+  // Get process info.
+  zx_koid_t processId = FuchsiaProcessID();
+  std::string processName = FuchsiaProcessName();
+
+  // Issue register request.
+  outstanding++;
+
+  mAgisComponentRegistry->Register(
+      client_id, processId, std::move(processName),
+      [&](fuchsia::gpu::agis::ComponentRegistry_Register_Result result) {
+        if (result.is_err()) {
+          GAPID_FATAL("Agis Register() failed.");
+        }
+        outstanding--;
+      });
+
+  LoopWait();
+
+  // Retrieve Vulkan socket.
+  outstanding++;
+
+  zx::socket vulkan_socket;
+  mAgisComponentRegistry->GetVulkanSocket(
+      client_id,
+      [&](fuchsia::gpu::agis::ComponentRegistry_GetVulkanSocket_Result result) {
+        fuchsia::gpu::agis::ComponentRegistry_GetVulkanSocket_Response response(
+            std::move(result.response()));
+        if (result.err()) {
+          GAPID_ERROR("GetVulkanSocket() failed");
+        }
+        vulkan_socket = response.ResultValue_();
+        if (!vulkan_socket.is_valid()) {
+          GAPID_ERROR("GetVulkanSocket() invalid socket");
+        }
+        GAPID_INFO("GetVulkanSocket() - vulkan socket established.");
+        outstanding--;
+      });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  LoopWait();
+
+  return vulkan_socket.release();
+}
+
+void Spy::LoopWait() {
+  while (outstanding) {
+    auto status = mAgisLoop->RunUntilIdle();
+    if (status != ZX_OK) {
+      GAPID_FATAL("Loop until idle failed.");
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  }
+}
+#endif  // TARGET_OS == GAPID_OS_FUCHSIA
 
 CallObserver* Spy::enter(const char* name, uint32_t api) {
   lock();

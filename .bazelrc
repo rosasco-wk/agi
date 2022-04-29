@@ -22,6 +22,9 @@ build --verbose_failures
 test --test_output=errors
 query --nohost_deps --noimplicit_deps
 
+# Use the C++17 standard.
+# build --cxxopt="-std=c++17" --host_cxxopt="-std=c++17"
+
 # Android special build configurations
 build --fat_apk_cpu armeabi-v7a,arm64-v8a,x86
 
@@ -51,4 +54,6 @@ test --strategy TestRunner=standalone --test_env DISPLAY
 
 build:fuchsia_arm64 --crosstool_top=@fuchsia_clang//:toolchain --cpu=aarch64 --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
 build:fuchsia_arm64 --cxxopt="-Wno-extra-semi"
+build:fuchsia_arm64 --copt="-Wno-deprecated-non-prototype"
+build:fuchsia_arm64 --copt="-Wno-unused-function"
 build:fuchsia_arm64 --define FUCHSIA_BUILD=1 --action_env=AGI_FUCHSIA_BUILD=1
