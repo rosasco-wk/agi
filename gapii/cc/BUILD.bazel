@@ -65,8 +65,12 @@ cc_library(
         ],
         "//tools/build:windows": [],
         "//tools/build:fuchsia-arm64": [
-            "@fuchsia_sdk_dynamic//pkg/agis",
-            "@fuchsia_sdk_dynamic//pkg/gpu/agis",
+# <<<<<<< HEAD
+#             "@fuchsia_sdk_dynamic//pkg/agis",
+#             "@fuchsia_sdk_dynamic//pkg/gpu/agis",
+# =======
+            "@fuchsia_sdk_dynamic//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_cc",
+# >>>>>>> 4e2e1ca36 ([fuchsia] Add agis connection initialization.)
             "@fuchsia_sdk_dynamic//pkg/async-loop-cpp",
             "@fuchsia_sdk_dynamic//pkg/async-loop-default",
             "@fuchsia_sdk_dynamic//pkg/fdio",
