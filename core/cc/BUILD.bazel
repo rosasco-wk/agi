@@ -61,7 +61,9 @@ cc_library(
         "@cityhash",
     ] + select({
         # Turn off breakpad dependency on Fuchsia.
-        "//tools/build:fuchsia-arm64": [],
+        "//tools/build:fuchsia-arm64": [
+            "@fuchsia_sdk//pkg/zx",
+        ],
         "//conditions:default": ["@breakpad"],
     }),
 )

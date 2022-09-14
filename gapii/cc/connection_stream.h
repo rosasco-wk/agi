@@ -22,6 +22,10 @@
 
 #include <memory>
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+#include <lib/zx/socket.h>
+#endif
+
 namespace core {
 
 class Connection;
@@ -46,6 +50,14 @@ class ConnectionStream : public core::StreamWriter, public core::StreamReader {
   static std::shared_ptr<ConnectionStream> listenPipe(const char* pipename,
                                                       bool abstract);
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+  // listenZirconSocket blocks and waits for a TCP connection to be made on the
+  // specified Zircon socket, returning a ConnectionStream once a connection is
+  // established.
+  static std::shared_ptr<ConnectionStream> listenZirconSocket(
+      zx::socket&& socket);
+#endif
+
   // core::StreamReader compliance
   virtual uint64_t read(void* data, uint64_t max_size) override;
 
@@ -57,7 +69,6 @@ class ConnectionStream : public core::StreamWriter, public core::StreamReader {
 
  private:
   ConnectionStream(std::unique_ptr<core::Connection>);
-
   std::unique_ptr<core::Connection> mConnection;
 };
 

@@ -51,6 +51,7 @@
 #if TARGET_OS == GAPID_OS_FUCHSIA
 #include <lib/sys/cpp/component_context.h>
 #include <atomic>
+#include "core/cc/fuchsia/zircon_socket_connection.h"
 #endif
 
 namespace {
@@ -165,15 +166,15 @@ Spy::Spy()
       pipe = envPipe;
     }
     mConnection = ConnectionStream::listenPipe(pipe.c_str(), true);
-#else  // TARGET_OS
-#if TARGET_OS == GAPID_OS_FUCHSIA
-    AgisRegister();
-    // TODO(rosasco): amend Connection and related to work with Zircon sockets.
-    // mConnection = ConnectionStream::listenSocket("127.0.0.1",
-    // socketString.c_str());
+#elif TARGET_OS == GAPID_OS_FUCHSIA
+    zx::socket vulkan_socket(AgisRegisterAndRetrieve(core::GetNanoseconds()));
+    if (!vulkan_socket.is_valid()) {
+      GAPID_ERROR("Vulkan socket is invalid.");
+    }
+    mConnection =
+        ConnectionStream::listenZirconSocket(std::move(vulkan_socket));
 #else
     mConnection = ConnectionStream::listenSocket("127.0.0.1", "9286");
-#endif
 #endif                                          // TARGET_OS
     if (mConnection->write("gapii", 5) != 5) {  // handshake magic
       GAPID_FATAL("Couldn't send handshake magic");
@@ -294,10 +295,11 @@ Spy::~Spy() {
 }
 
 #if TARGET_OS == GAPID_OS_FUCHSIA
-void Spy::AgisRegister() {
+zx_handle_t Spy::AgisRegisterAndRetrieve(uint64_t client_id) {
   mAgisNumConnections = 0;
 
-  // Make AgisRegister() re-entrant by flushing outstanding loop requests.
+  // Make AgisRegisterAndRetrieve() re-entrant by flushing outstanding loop
+  // requests.
   if (mAgisLoop) {
     LoopWait();
     mAgisLoop->Quit();
@@ -324,10 +326,8 @@ void Spy::AgisRegister() {
   // Issue register request.
   outstanding++;
 
-  // TODO(rosasco): generate a usable client id here.
-  const uint64_t kPlaceholderClientId = 0xCAFE9999;
   mAgisComponentRegistry->Register(
-      kPlaceholderClientId, processId, std::move(processName),
+      client_id, processId, std::move(processName),
       [&](fuchsia::gpu::agis::ComponentRegistry_Register_Result result) {
         if (result.is_err()) {
           GAPID_FATAL("Agis Register() failed.");
@@ -336,6 +336,31 @@ void Spy::AgisRegister() {
       });
 
   LoopWait();
+
+  // Retrieve Vulkan socket.
+  outstanding++;
+
+  zx::socket vulkan_socket;
+  mAgisComponentRegistry->GetVulkanSocket(
+      client_id,
+      [&](fuchsia::gpu::agis::ComponentRegistry_GetVulkanSocket_Result result) {
+        fuchsia::gpu::agis::ComponentRegistry_GetVulkanSocket_Response response(
+            std::move(result.response()));
+        if (result.err()) {
+          GAPID_ERROR("GetVulkanSocket() failed");
+        }
+        vulkan_socket = response.ResultValue_();
+        if (!vulkan_socket.is_valid()) {
+          GAPID_ERROR("GetVulkanSocket() invalid socket");
+        }
+        GAPID_INFO("GetVulkanSocket() - vulkan socket established.");
+        outstanding--;
+      });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  LoopWait();
+
+  return vulkan_socket.release();
 }
 
 void Spy::LoopWait() {
@@ -375,9 +400,6 @@ void Spy::endTraceIfRequested() {
     mConnection->write(msg.data(), msg.size());
     // allow some time for the message to arrive
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-#if TARGET_OS == GAPID_OS_FUCHSIA
-    mSocket.reset();
-#endif
     mConnection->close();
     set_suspended(true);
   }
