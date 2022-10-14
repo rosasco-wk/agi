@@ -48,6 +48,12 @@ android_dynamic_library(
 )
 
 filegroup(
+    name = "fuchsia_json",
+    srcs = ["GraphicsSpyLayerFuchsia.json"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "json",
     srcs = ["GraphicsSpyLayer.json"],
     visibility = ["//visibility:public"],
