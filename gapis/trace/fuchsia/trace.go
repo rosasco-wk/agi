@@ -23,7 +23,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	perfetto_pb "protos/perfetto/config"
+
 	"github.com/google/gapid/core/app"
+	"github.com/google/gapid/core/app/status"
 	"github.com/google/gapid/core/event/task"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/device/bind"
@@ -33,6 +36,22 @@ import (
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/gapid/gapis/trace/android/validate"
+	"github.com/google/gapid/gapis/trace/tracer"
+
+	"github.com/golang/protobuf/proto"
+
+	"github.com/google/gapid/core/app"
+	"github.com/google/gapid/core/app/status"
+	"github.com/google/gapid/core/event/task"
+	"github.com/google/gapid/core/log"
+	"github.com/google/gapid/core/os/device/bind"
+	"github.com/google/gapid/core/os/file"
+	"github.com/google/gapid/gapis/api"
+	"github.com/google/gapid/gapis/api/sync"
+	"github.com/google/gapid/gapis/service"
+	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/gapid/gapis/trace/android/validate"
 	"github.com/google/gapid/gapis/trace/tracer"
 )
 
@@ -94,6 +113,7 @@ func (s *traceSession) Capture(ctx context.Context, start task.Signal, stop task
 
 type fuchsiaTracer struct {
 	device fuchsia.Device
+	validator validate.Validator
 }
 
 // TraceConfiguration returns the device's supported trace configuration.
@@ -147,9 +167,50 @@ func (t *fuchsiaTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 	return nil, nil
 }
 
+// TODO(rosasco): this func should be platform agnostic.  Consolidate
+// with Android version.
+func deviceValidationTraceOptions(ctx context.Context, v validate.Validator) *service.TraceOptions {
+	counters := v.GetCounters()
+	ids := make([]uint32, len(counters))
+	for i, counter := range counters {
+		ids[i] = counter.Id
+	}
+	return &service.TraceOptions{
+		DeferStart: true,
+		PerfettoConfig: &perfetto_pb.TraceConfig{
+			Buffers: []*perfetto_pb.TraceConfig_BufferConfig{
+				{SizeKb: proto.Uint32(bufferSizeKb)},
+			},
+			DurationMs: proto.Uint32(durationMs),
+			DataSources: []*perfetto_pb.TraceConfig_DataSource{
+				{
+					Config: &perfetto_pb.DataSourceConfig{
+						Name: proto.String(gpuRenderStagesDataSourceDescriptorName),
+					},
+				},
+				{
+					Config: &perfetto_pb.DataSourceConfig{
+						Name: proto.String(gpuCountersDataSourceDescriptorName),
+						GpuCounterConfig: &perfetto_pb.GpuCounterConfig{
+							CounterPeriodNs: proto.Uint64(counterPeriodNs),
+							CounterIds:      ids,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 // Validate validates the GPU profiling capabilities of the given device and returns
 // an error if validation failed or the GPU profiling data is invalid.
 func (t *fuchsiaTracer) Validate(ctx context.Context, enableLocalFiles bool) (*service.DeviceValidationResult, error) {
+	ctx = status.Start(ctx, "Fuchsia Device Validation")
+	defer status.Finish(ctx)
+	
+	device := t.device.(fuchsia.Device);
+	traceOpts := deviceValidationTraceOptions(ctx, t.validator);
+
 	return &service.DeviceValidationResult{}, nil
 }
 
