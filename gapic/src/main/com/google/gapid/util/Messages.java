@@ -57,6 +57,7 @@ public interface Messages {
   public static final String CAPTURE_CWD = "Application working directory...";
   public static final String BROWSE = "Browse";
   public static final String SELECT_ACTIVITY = "Select an Application to Trace";
+  public static final String SELECT_COMPONENT = "Select a Component to Trace";
   public static final String WELCOME_TITLE = WINDOW_TITLE + " - Welcome";
   public static final String WELCOME_SUBTITLE = "Get started with " + WINDOW_TITLE;
   public static final String WELCOME_TEXT = "AGI allows you to inspect, tweak, and replay calls" +

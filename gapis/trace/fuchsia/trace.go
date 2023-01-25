@@ -99,7 +99,7 @@ type fuchsiaTracer struct {
 // TraceConfiguration returns the device's supported trace configuration.
 func (t *fuchsiaTracer) TraceConfiguration(ctx context.Context) (*service.DeviceTraceConfiguration, error) {
 	return &service.DeviceTraceConfiguration{
-		Types:                []*service.TraceTypeCapabilities{tracer.FuchsiaTraceOptions()},
+		Types:                []*service.TraceTypeCapabilities{tracer.FuchsiaTraceOptions(), tracer.VulkanTraceOptions()},
 		ServerLocalPath:      false,
 		CanSpecifyCwd:        true,
 		CanUploadApplication: false,
@@ -112,12 +112,14 @@ func (t *fuchsiaTracer) TraceConfiguration(ctx context.Context) (*service.Device
 // GetTraceTargetNode returns a TraceTargetTreeNode for the given URI
 // on the device
 func (t *fuchsiaTracer) GetTraceTargetNode(ctx context.Context, uri string, iconDensity float32) (*tracer.TraceTargetTreeNode, error) {
+	log.E(ctx, "ERROR: GetTraceTargetNode is returning nil");
 	return nil, nil
 }
 
 // FindTraceTargets finds TraceTargetTreeNodes for a given search string on
 // the device
 func (t *fuchsiaTracer) FindTraceTargets(ctx context.Context, uri string) ([]*tracer.TraceTargetTreeNode, error) {
+	log.E(ctx, "ERROR: FindTraceTargets is returning nil");
 	return nil, nil
 }
 
@@ -144,6 +146,7 @@ func (t *fuchsiaTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 	handleMapping map[uint64][]service.VulkanHandleMappingItem, syncData *sync.Data) (*service.ProfilingData, error) {
 
 	<-staticAnalysisResult // Ignore the static analysis result.
+	log.E(ctx, "ERROR: ProcessProfilingData is returning nil");
 	return nil, nil
 }
 

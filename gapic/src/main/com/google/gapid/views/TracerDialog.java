@@ -103,6 +103,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 
+import org.eclipse.jface.dialogs.TrayDialog;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URL;
@@ -296,7 +298,7 @@ public class TracerDialog {
       private static final String DEFAULT_TRACE_FILE = "trace";
       private static final String ANGLE_STRING = "_angle";
       private static final DateFormat TRACE_DATE_FORMAT = new SimpleDateFormat("_yyyyMMdd_HHmm");
-      private static final String TARGET_LABEL = "Application";
+      private static final String TARGET_LABEL = "Component";
       private static final String FRAMES_LABEL = "Stop After:";
       private static final String ONE_FRAME_LABEL = "Duration: 1 Frame";
       private static final String DURATION_LABEL = "Duration:";
@@ -313,7 +315,7 @@ public class TracerDialog {
 
       private final String date = TRACE_DATE_FORMAT.format(new Date());
 
-      private List<DeviceCaptureInfo> devices;
+      private List<DeviceCaptureInfo> deviceCaptureInfos;
       private final Models models;
 
       private final ComboViewer deviceDropdown;
@@ -426,7 +428,7 @@ public class TracerDialog {
         deviceValidationView = new DeviceValidationView(mainGroup, this.models, widgets);
 
         Group appGroup  = withLayoutData(
-            createGroup(this, "Application", new GridLayout(2, false)),
+            createGroup(this, "Component", new GridLayout(2, false)),
             new GridData(GridData.FILL_HORIZONTAL));
         targetLabel = createLabel(appGroup, TARGET_LABEL + ":");
         traceTarget = withLayoutData(new ActionTextbox(appGroup, trace.getUri()) {
@@ -434,6 +436,7 @@ public class TracerDialog {
           protected String createAndShowDialog(String current) {
             DeviceCaptureInfo dev = getSelectedDevice();
             if (dev != null) {
+              System.out.println("ABOUT TO OPEN TRACE TARGET PICKER");
               TraceTargets.Target target =
                   showTraceTargetPicker(dev, current, getShell(), models, widgets);
               if (target != null) {
@@ -622,7 +625,7 @@ public class TracerDialog {
       }
 
       private void colorFilledInput(Theme theme) {
-        if (devices == null) {
+        if (deviceCaptureInfos == null) {
           // Don't mark anything red, until the devices are loaded.
           return;
         }
@@ -779,15 +782,23 @@ public class TracerDialog {
       }
 
       private void updateDevicesDropDown(SettingsProto.TraceOrBuilder trace) {
-        if (deviceDropdown != null && devices != null) {
+        if (deviceDropdown != null && deviceCaptureInfos != null) {
           deviceReloadButton.setEnabled(true);
 
           TraceType type = getSelectedType();
+          System.out.println("TRACE TYPE: " + type);
           if (type == null) {
             return;
           }
 
-          List<DeviceCaptureInfo> matching = devices.stream()
+          System.out.println("UPDATE DEVICE DROPDOWN");
+          for (DeviceCaptureInfo device_info : deviceCaptureInfos) {
+            if(device_info.isFuchsia()) {
+              System.out.println("Found Fuchsia Device: " + device_info.device);
+            }
+          }
+
+          List<DeviceCaptureInfo> matching = deviceCaptureInfos.stream()
               .filter(d -> type.getCapabilities(d) != null)
               .collect(toList());
           deviceDropdown.setInput(matching);
@@ -833,11 +844,11 @@ public class TracerDialog {
       private Optional<DeviceCaptureInfo> getPreviouslySelectedDevice(
           SettingsProto.TraceOrBuilder trace) {
         if (!trace.getDeviceSerial().isEmpty()) {
-          return devices.stream()
+          return deviceCaptureInfos.stream()
               .filter(dev -> trace.getDeviceSerial().equals(dev.device.getSerial()))
               .findAny();
         } else if (!trace.getDeviceName().isEmpty()) {
-          return devices.stream()
+          return deviceCaptureInfos.stream()
               .filter(dev -> "".equals(dev.device.getSerial()) &&
                   trace.getDeviceName().equals(dev.device.getName()))
               .findAny();
@@ -875,7 +886,9 @@ public class TracerDialog {
 
       protected static TraceTargets.Target showTraceTargetPicker(
           DeviceCaptureInfo dev, String current, Shell shell, Models models, Widgets widgets) {
+        System.out.println("\nshowTraceTargetPicker");
         if (dev.config.getServerLocalPath()) {
+          System.out.println("\tWE ARE LOCAL BLOCK");
           // We are local, show a system file browser dialog.
           FileDialog dialog = new FileDialog(shell);
           if (!setDialogPath(dialog, current) &&
@@ -890,12 +903,23 @@ public class TracerDialog {
           }
         } else {
           // Use the server to query the trace target tree.
+          System.out.println("\tTODO: ADD CONDITION FOR OPENING FUCHSIA TRACE TARGET DIALOG");
+          if(true) {
+            FuchsiaTraceTargetPickerDialog dialog =
+                new FuchsiaTraceTargetPickerDialog(shell, models, dev.targets, widgets);
+            if (dialog.open() == Window.OK) {
+              // TraceTargets.Node node = dialog.getSelected();
+              // return (node == null) ? null : node.getTraceTarget();
+              System.out.println("\tDIALOG OPEN OK");
+            }
+          } else {
           TraceTargetPickerDialog dialog =
               new TraceTargetPickerDialog(shell, models, dev.targets, widgets);
           if (dialog.open() == Window.OK) {
             TraceTargets.Node node = dialog.getSelected();
             return (node == null) ? null : node.getTraceTarget();
           }
+        }
         }
         return null;
       }
@@ -990,7 +1014,7 @@ public class TracerDialog {
       }
 
       public void setDevices(Settings settings, List<DeviceCaptureInfo> devices) {
-        this.devices = devices;
+        this.deviceCaptureInfos = devices;
         updateDevicesDropDown(settings.trace());
       }
 
