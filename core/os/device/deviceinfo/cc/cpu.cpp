@@ -117,6 +117,20 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
 
 #elif ((defined(__arm__) || defined(__aarch64__)) && \
        TARGET_OS == GAPID_OS_FUCHSIA)
+
+// Exposing elements of Fuchsia's hwinfo capability is under privacy review.
+// Remove / resolve when this review concludes.
+#define HWINFO_STUBS 1
+
+#if HWINFO_STUBS
+bool query::queryCpu(CpuInfo* info, std::string* error) {
+  info->architecture = device::UnknownArchitecture;
+  info->name = "fuchsia_device_unknown";
+  info->vendor = "fuchsia_vendor_unknown";
+
+  return true;
+}
+#else
 #include <fuchsia/hwinfo/cpp/fidl.h>
 #include <lib/sys/cpp/component_context.h>
 
@@ -178,6 +192,7 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
 
   return true;
 }
+#endif
 
 #else
 #error Unsupported target architecture.
